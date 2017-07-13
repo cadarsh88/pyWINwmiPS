@@ -1,34 +1,47 @@
 import wmi
+import os
 
-def Get_Cluster(computer="."):
-    c = wmi.WMI(computer=computer, namespace="MSCluster", authentication_level="pktPrivacy")
-    clu = c.MSCluster_Cluster()
-    nod = c.MSCluster_Node()
-    rgr = c.MSCluster_ResourceGroupToResource()
-    nar = c.MSCluster_NodeToActiveResource()
+class Networkerror(RuntimeError):
+    def __init__(self, arg):
+       self.args = arg
 
-    p = set()
-    s = set()
+def GetCluster(computer="."):
+    try:
+        res = os.system('ping %s -n 1' % (computer,))
+        if res == 0:
+            c = wmi.WMI(computer=computer, namespace="MSCluster", authentication_level="pktPrivacy")
+            clu = c.MSCluster_Cluster()
+            nod = c.MSCluster_Node()
+            rgr = c.MSCluster_ResourceGroupToResource()
+            nar = c.MSCluster_NodeToActiveResource()
 
-    print "\n"
+            p = set()
+            s = set()
 
-    for cluster in clu:
-        print "Cluster Name:", cluster.name
+            print "\n"
+
+            for cluster in clu:
+                print "Cluster Name:", cluster.name
 
 
-    print "\nCluster Nodes: \n"
+            print "\nCluster Nodes: \n"
 
-    for clunodes in nod:
-        print clunodes.name
+            for clunodes in nod:
+                print clunodes.name
 
-    print "\n"
+            print "\n"
 
-    for z in rgr:
-        kv = str(z.GroupComponent).split("=")
-        mn = str(z.PartComponent).split("=")
-        for y in nar:
-            na = str(y.GroupComponent).split("=")
-            jy = str(y.PartComponent).split("=")
-            if(mn==jy):
-                print "Resource Name:", mn[1], "Resource Group: ", kv[1], "Node Name:", na[1]
-
+            for z in rgr:
+                kv = str(z.GroupComponent).split("=")
+                mn = str(z.PartComponent).split("=")
+                for y in nar:
+                    na = str(y.GroupComponent).split("=")
+                    jy = str(y.PartComponent).split("=")
+                    if(mn==jy):
+                        print "Resource Name:", mn[1], "Resource Group: ", kv[1], "Node Name:", na[1]
+        else:
+            raise Networkerror('Server not found or not reachable')
+    except Networkerror, arg:
+        print "Error: ", arg.args
+    except wmi.x_wmi:
+        print "The server isn't a cluster node"
